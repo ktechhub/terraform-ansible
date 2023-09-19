@@ -1,0 +1,62 @@
+---
+- name: Install packages and Docker
+  hosts: all
+  user: ubuntu
+  become: true
+  tasks:
+    - name: Install packages
+      apt:
+        name: "{{ packages }}"
+        update_cache: yes
+      vars:
+        packages:
+          - curl
+          - python3
+          - python3-pip
+          - nginx
+
+    - name: Install Docker prerequisites
+      apt:
+        name: "{{ packages }}"
+        update_cache: yes
+      vars:
+        packages:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+
+    - name: Add Docker's official GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker repository
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_lsb.codename }} stable"
+        state: present
+
+    - name: Install Docker
+      apt:
+        name: docker-ce
+        state: present
+
+    - name: Install Docker Compose
+      pip:
+        name: docker-compose
+        state: present
+
+    - name: Verify Docker Compose installation
+      command: docker-compose --version
+      register: docker_compose_version
+      ignore_errors: true
+
+    - name: Print Docker Compose version
+      debug:
+        var: docker_compose_version.stdout_lines
+
+    - name: Add ansible user to the docker group
+      become: true
+      command: usermod -aG docker "{{ ansible_user }}"
+      become_user: root
